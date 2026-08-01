@@ -2,118 +2,178 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TripMate AI — Boarding your itinerary</title>
 
-    <title>TripMate AI</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
     <link rel="stylesheet" href="/static/style.css">
 </head>
 
 <body>
 
-    <div class="page-bg">
-        <div class="gradient-circle circle-1"></div>
-        <div class="gradient-circle circle-2"></div>
-        <div class="gradient-circle circle-3"></div>
-    </div>
+    <div class="board-bg" aria-hidden="true"></div>
 
     <main class="app-container">
 
-        <section class="hero-section">
-            <div class="badge">
-                ✈️ AI — A Multi-Agent Travel Planner with LangGraph
+        <!-- ============ TOP BAR ============ -->
+        <header class="topbar">
+            <div class="brand">
+                <span class="brand-mark">✈</span>
+                <span class="brand-text">TRIPMATE<span class="brand-accent">AI</span></span>
             </div>
 
-            <h1>
-                Plan Your Perfect Trip with AI
-            </h1>
+            <div class="status-pill" role="status">
+                <span class="status-dot"></span>
+                <span>SYSTEM ON TIME</span>
+            </div>
+        </header>
 
-            <p>
-                Search flights, discover hotels, and generate a complete travel itinerary using a multi-agent LangGraph system.
+        <div class="ticker" aria-hidden="true">
+            <div class="ticker-track">
+                <span>DAC → NRT · JAPAN</span>
+                <span>DAC → DXB · UAE</span>
+                <span>DAC → BKK · THAILAND</span>
+                <span>DAC → NRT · JAPAN</span>
+                <span>DAC → DXB · UAE</span>
+                <span>DAC → BKK · THAILAND</span>
+            </div>
+        </div>
+
+        <!-- ============ HERO ============ -->
+        <section class="hero-section">
+            <p class="eyebrow">MULTI-AGENT ITINERARY DESK · LANGGRAPH</p>
+            <h1 id="splitHeadline" class="split-headline">Plan your next journey</h1>
+            <p class="hero-sub">
+                Tell the desk where you're headed. Flight search, hotel picks and a full
+                day-by-day itinerary get assembled by a crew of AI agents — then issued to you as a boarding pass.
             </p>
         </section>
 
-        <section class="planner-card">
-
-            <div class="card-header">
+        <!-- ============ TICKET COUNTER (INPUT) ============ -->
+        <section class="counter-card">
+            <div class="counter-header">
                 <div>
+                    <span class="counter-label">GATE 01 · REQUEST DESK</span>
                     <h2>Where do you want to go?</h2>
-                    <p>
-                        Example: Plan a complete 7 days Japan trip from Bangladesh under 2 lakhs.
-                    </p>
-                </div>
-
-                <div class="status-pill">
-                    <span class="status-dot"></span>
-                    Online
                 </div>
             </div>
 
             <div class="input-area">
                 <textarea
                     id="userInput"
-                    placeholder="Plan a complete 7 days Japan trip including flights, hotels and sightseeing under 2 lakhs..."
+                    placeholder="Plan a complete 7 days Japan trip from Bangladesh including flights, hotels and sightseeing under 2 lakhs..."
                 ></textarea>
 
                 <button id="sendBtn" onclick="sendMessage()">
-                    <span id="btnText">Generate Plan</span>
+                    <span id="btnText">Issue My Plan →</span>
                     <span id="btnLoader" class="loader hidden"></span>
                 </button>
             </div>
 
             <div class="quick-prompts">
+                <span class="quick-label">Quick boarding:</span>
                 <button onclick="setPrompt('Plan a complete 7 days Japan trip from Bangladesh including flights, hotels and sightseeing under 2 lakhs.')">
-                    Japan Trip
+                    🇯🇵 Japan · 7d
                 </button>
-
                 <button onclick="setPrompt('Plan a 5 days Dubai trip from Dhaka with flights, hotels and sightseeing.')">
-                    Dubai Trip
+                    🇦🇪 Dubai · 5d
                 </button>
-
                 <button onclick="setPrompt('Plan a 7 days Thailand trip from Bangladesh with budget hotels and sightseeing.')">
-                    Thailand Trip
+                    🇹🇭 Thailand · 7d
                 </button>
-
                 <button onclick="setPrompt('Give me all country flight info.')">
-                    Global Flights
+                    🌍 Global Flights
                 </button>
             </div>
-
         </section>
 
+        <!-- ============ ROUTE PREVIEW MAP (not part of PDF) ============ -->
+        <section id="mapSection" class="map-card hidden">
+            <div class="map-header">
+                <span class="counter-label">ROUTE PREVIEW</span>
+                <p id="mapCaption" class="map-caption">—</p>
+            </div>
+            <div id="routeMap" class="route-map"></div>
+        </section>
+
+        <!-- ============ BOARDING PASS RESULT ============ -->
         <section id="resultSection" class="result-section hidden">
 
-            <div class="result-header">
-                <div>
-                    <h2>Your AI Travel Plan</h2>
-                    <p id="threadInfo">Thread ID: -</p>
-                </div>
-
+            <div class="result-actions-row">
+                <span class="counter-label">YOUR ITINERARY IS READY</span>
                 <div class="result-actions">
-                    <button class="copy-btn" onclick="copyResult()">
-                        Copy
-                    </button>
-
-                    <button class="download-btn" onclick="downloadPDF()">
-                        Download PDF
-                    </button>
+                    <button class="copy-btn" onclick="copyResult()">Copy Text</button>
+                    <button class="download-btn" onclick="downloadPDF()">Download PDF</button>
                 </div>
             </div>
 
             <div id="pdfContent" class="pdf-content">
-                <h1 class="pdf-title">AI Travel Plan</h1>
+
+                <h1 class="pdf-title">TripMate AI — Boarding Pass Itinerary</h1>
+
+                <!-- Boarding pass stub -->
+                <div class="boarding-pass">
+                    <div class="bp-main">
+                        <div class="bp-row bp-brand-row">
+                            <span class="bp-brand">TRIPMATE AIRWAYS</span>
+                            <span class="bp-class">CLASS: AI-GENERATED</span>
+                        </div>
+
+                        <div class="bp-route">
+                            <div class="bp-city">
+                                <span class="bp-code" id="bpFromCode">—</span>
+                                <span class="bp-city-name" id="bpFromName">Origin</span>
+                            </div>
+                            <div class="bp-plane">✈</div>
+                            <div class="bp-city bp-city-right">
+                                <span class="bp-code" id="bpToCode">—</span>
+                                <span class="bp-city-name" id="bpToName">Destination</span>
+                            </div>
+                        </div>
+
+                        <div class="bp-grid">
+                            <div class="bp-field">
+                                <span class="bp-field-label">Duration</span>
+                                <span class="bp-field-value" id="bpDuration">—</span>
+                            </div>
+                            <div class="bp-field">
+                                <span class="bp-field-label">Budget</span>
+                                <span class="bp-field-value" id="bpBudget">—</span>
+                            </div>
+                            <div class="bp-field">
+                                <span class="bp-field-label">Passenger</span>
+                                <span class="bp-field-value">You</span>
+                            </div>
+                            <div class="bp-field">
+                                <span class="bp-field-label">Status</span>
+                                <span class="bp-field-value bp-status">CONFIRMED</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bp-stub">
+                        <div class="bp-stub-label">RESERVATION CODE</div>
+                        <div class="bp-stub-code" id="threadInfo">—</div>
+                        <div class="bp-barcode" aria-hidden="true"></div>
+                    </div>
+                </div>
+
                 <div id="resultBox" class="result-box"></div>
             </div>
 
         </section>
 
-        <section id="errorBox" class="error-box hidden"></section>
+        <section id="errorBox" class="error-box hidden" role="alert"></section>
 
     </main>
 
     <footer>
-        Built with FastAPI, LangGraph, Groq, PostgreSQL, Tavily and AviationStack
+        Built with FastAPI · LangGraph · Groq · PostgreSQL · Tavily · AviationStack
     </footer>
 
     <!-- Markdown Renderer -->
@@ -121,6 +181,9 @@
 
     <!-- PDF Download Library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <!-- Map -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <!-- Your Custom JS -->
     <script src="/static/script.js"></script>
