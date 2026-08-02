@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title> AI TRIP PLANER — Boarding your itinerary</title>
+    <title>Voyagent AI — Boarding your itinerary</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,8 +23,8 @@
         <!-- ============ TOP BAR ============ -->
         <header class="topbar">
             <div class="brand">
-                <span class="brand-mark">✈</span>
-                <span class="brand-text">TRIPMATE<span class="brand-accent">AI</span></span>
+                <span class="brand-mark">🧭</span>
+                <span class="brand-text">VOYAGENT<span class="brand-accent">AI</span></span>
             </div>
 
             <div class="status-pill" role="status">
@@ -77,16 +77,16 @@
 
             <div class="quick-prompts">
                 <span class="quick-label">Quick boarding:</span>
-                <button onclick="setPrompt('Plan a complete 7 days Japan trip from Bangladesh including flights, hotels and sightseeing under 2 lakhs.')">
+                <button class="jp" onclick="setPrompt('Plan a complete 7 days Japan trip from Bangladesh including flights, hotels and sightseeing under 2 lakhs.')">
                     🇯🇵 Japan · 7d
                 </button>
-                <button onclick="setPrompt('Plan a 5 days Dubai trip from Dhaka with flights, hotels and sightseeing.')">
+                <button class="ae" onclick="setPrompt('Plan a 5 days Dubai trip from Dhaka with flights, hotels and sightseeing.')">
                     🇦🇪 Dubai · 5d
                 </button>
-                <button onclick="setPrompt('Plan a 7 days Thailand trip from Bangladesh with budget hotels and sightseeing.')">
+                <button class="th" onclick="setPrompt('Plan a 7 days Thailand trip from Bangladesh with budget hotels and sightseeing.')">
                     🇹🇭 Thailand · 7d
                 </button>
-                <button onclick="setPrompt('Give me all country flight info.')">
+                <button class="global" onclick="setPrompt('Give me all country flight info.')">
                     🌍 Global Flights
                 </button>
             </div>
@@ -114,13 +114,13 @@
 
             <div id="pdfContent" class="pdf-content">
 
-                <h1 class="pdf-title">TripMate AI — Boarding Pass Itinerary</h1>
+                <h1 class="pdf-title">Voyagent AI — Boarding Pass Itinerary</h1>
 
                 <!-- Boarding pass stub -->
                 <div class="boarding-pass">
                     <div class="bp-main">
                         <div class="bp-row bp-brand-row">
-                            <span class="bp-brand">TRIPMATE AIRWAYS</span>
+                            <span class="bp-brand">VOYAGENT AIRWAYS</span>
                             <span class="bp-class">CLASS: AI-GENERATED</span>
                         </div>
 
@@ -173,7 +173,7 @@
     </main>
 
     <footer>
-        Built with FastAPI · LangGraph · Groq · PostgreSQL · Tavily · AviationStack
+        Voyagent AI · Built with FastAPI · LangGraph · Groq · PostgreSQL · Tavily · AviationStack
     </footer>
 
     <!-- Markdown Renderer -->

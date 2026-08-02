@@ -1,4 +1,4 @@
-let currentThreadId = localStorage.getItem("travel_thread_id") || null;
+let currentThreadId = localStorage.getItem("voyagent_thread_id") || null;
 let latestAnswerMarkdown = "";
 let routeMap = null;
 const geocodeCache = {};
@@ -249,7 +249,7 @@ async function sendMessage() {
         }
 
         currentThreadId = data.thread_id;
-        localStorage.setItem("travel_thread_id", currentThreadId);
+        localStorage.setItem("voyagent_thread_id", currentThreadId);
 
         showResult(data.answer, data.thread_id, tripInfo);
 
@@ -297,7 +297,7 @@ function downloadPDF() {
 
     const options = {
         margin: 0.5,
-        filename: "tripmate-ai-boarding-pass.pdf",
+        filename: "voyagent-ai-boarding-pass.pdf",
         image: { type: "jpeg", quality: 0.98 },
         html2canvas: { scale: 2, useCORS: true, backgroundColor: "#ffffff" },
         jsPDF: { unit: "in", format: "a4", orientation: "portrait" },
@@ -324,4 +324,3 @@ document.addEventListener("keydown", function (event) {
         sendMessage();
     }
 });
-
