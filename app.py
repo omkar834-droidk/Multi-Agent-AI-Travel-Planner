@@ -1,4 +1,5 @@
 from pathlib import Path
+import asyncio
 import traceback
 import uvicorn
 
@@ -74,9 +75,10 @@ async def travel_planner(request_data: TravelRequest):
                 }
             )
 
-        result = run_travel_agent(
+        result = await asyncio.to_thread(
+            run_travel_agent,
             user_input=user_message,
-            thread_id=request_data.thread_id
+            thread_id=request_data.thread_id,
         )
 
         return JSONResponse(
@@ -119,7 +121,8 @@ async def travel_resume(request_data: ResumeRequest):
                 }
             )
 
-        result = resume_travel_agent(
+        result = await asyncio.to_thread(
+            resume_travel_agent,
             thread_id=thread_id,
             approved=request_data.approved,
             feedback=request_data.feedback,
