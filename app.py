@@ -8,14 +8,14 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 
-from backend import run_travel_agent
+from backend import run_travel_agent, resume_travel_agent
 
 BASE_DIR = Path(__file__).resolve().parent
 
 app = FastAPI(
-    title="AI Agent Travel Planner",
-    description="LangGraph Multi-Agent Travel Planner with FastAPI Frontend",
-    version="1.0.0"
+    title="Voyagent AI Travel Planner",
+    description="LangGraph Multi-Agent Travel Planner with Supervisor Routing, MCP Tools, Guardrails, and Human-in-the-Loop Approval",
+    version="2.0.0"
 )
 
 
@@ -31,11 +31,15 @@ templates = Jinja2Templates(
 )
 
 
-
 class TravelRequest(BaseModel):
     message: str
     thread_id: str | None = None
 
+
+class ResumeRequest(BaseModel):
+    thread_id: str
+    approved: bool
+    feedback: str = ""
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -49,6 +53,15 @@ async def home(request: Request):
 
 @app.post("/api/travel")
 async def travel_planner(request_data: TravelRequest):
+    """
+    Starts a new travel-planning run.
+
+    The graph runs the input guardrail, the supervisor, the selected
+    specialist agents, and the itinerary agent, then pauses for human
+    review. The response's `requires_approval` flag tells the frontend
+    whether to show the approve / request-changes UI before the run
+    can reach the final agent.
+    """
     try:
         user_message = request_data.message.strip()
 
@@ -69,12 +82,7 @@ async def travel_planner(request_data: TravelRequest):
         return JSONResponse(
             content={
                 "success": True,
-                "thread_id": result["thread_id"],
-                "answer": result["answer"],
-                "flight_results": result["flight_results"],
-                "hotel_results": result["hotel_results"],
-                "itinerary": result["itinerary"],
-                "llm_calls": result["llm_calls"],
+                **result,
             }
         )
 
@@ -91,19 +99,63 @@ async def travel_planner(request_data: TravelRequest):
         )
 
 
+@app.post("/api/travel/resume")
+async def travel_resume(request_data: ResumeRequest):
+    """
+    Resumes a paused thread after the human approves the draft itinerary
+    or requests a revision. Uses LangGraph's Command(resume=...) against
+    the same thread_id, so the run continues from the interrupt point
+    rather than starting over.
+    """
+    try:
+        thread_id = request_data.thread_id.strip()
+
+        if not thread_id:
+            return JSONResponse(
+                status_code=400,
+                content={
+                    "success": False,
+                    "error": "thread_id is required to resume a travel plan."
+                }
+            )
+
+        result = resume_travel_agent(
+            thread_id=thread_id,
+            approved=request_data.approved,
+            feedback=request_data.feedback,
+        )
+
+        return JSONResponse(
+            content={
+                "success": True,
+                **result,
+            }
+        )
+
+    except Exception as e:
+        print("ERROR:", e)
+        traceback.print_exc()
+
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "error": str(e)
+            }
+        )
+
 
 @app.get("/health")
 async def health_check():
     return {
         "status": "ok",
-        "message": "AI Travel Planner API is running"
+        "message": "Voyagent AI Travel Planner API is running"
     }
 
 
 @app.get("/favicon.ico")
 async def favicon():
     return JSONResponse(content={})
-
 
 
 if __name__ == "__main__":

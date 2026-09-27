@@ -46,11 +46,12 @@
 
         <!-- ============ HERO ============ -->
         <section class="hero-section">
-            <p class="eyebrow">MULTI-AGENT ITINERARY DESK · LANGGRAPH</p>
+            <p class="eyebrow">SUPERVISOR-ROUTED MULTI-AGENT DESK · LANGGRAPH + MCP</p>
             <h1 id="splitHeadline" class="split-headline">Plan your next journey</h1>
             <p class="hero-sub">
-                Tell the desk where you're headed. Flight search, hotel picks and a full
-                day-by-day itinerary get assembled by a crew of AI agents — then issued to you as a boarding pass.
+                Tell the desk where you're headed. A supervisor agent routes your request to the
+                right specialists — flights, hotels, weather, and budget — then drafts your itinerary
+                for your approval before issuing the final boarding pass.
             </p>
         </section>
 
@@ -74,6 +75,8 @@
                     <span id="btnLoader" class="loader hidden"></span>
                 </button>
             </div>
+
+            <p id="pipelineStatus" class="pipeline-status hidden"></p>
 
             <div class="quick-prompts">
                 <span class="quick-label">Quick boarding:</span>
@@ -99,6 +102,57 @@
                 <p id="mapCaption" class="map-caption">—</p>
             </div>
             <div id="routeMap" class="route-map"></div>
+        </section>
+
+        <!-- ============ MULTI-AGENT TRACE / INTELLIGENCE PANEL ============ -->
+        <section id="agentTraceSection" class="map-card agent-trace hidden">
+            <div class="map-header">
+                <span class="counter-label">🤖 MULTI-AGENT TRACE</span>
+            </div>
+
+            <div id="agentChips" class="agent-chips"></div>
+            <p id="reasoningNote" class="reasoning-note hidden"></p>
+
+            <div class="intel-grid">
+                <div id="weatherCard" class="intel-card weather-card hidden">
+                    <div class="intel-card-head">
+                        <span class="intel-icon">🌤️</span>
+                        <span class="intel-title">Weather</span>
+                    </div>
+                    <div id="weatherBody" class="intel-body"></div>
+                </div>
+
+                <div id="budgetCard" class="intel-card budget-card hidden">
+                    <div class="intel-card-head">
+                        <span class="intel-icon">💰</span>
+                        <span class="intel-title">Budget Analysis</span>
+                    </div>
+                    <div id="budgetBody" class="intel-body result-box"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ============ HUMAN-IN-THE-LOOP APPROVAL ============ -->
+        <section id="approvalSection" class="result-section approval-section hidden">
+            <div class="result-actions-row">
+                <span class="counter-label">🧑‍✈️ HUMAN REVIEW REQUIRED</span>
+            </div>
+
+            <p id="approvalNote" class="approval-note">
+                Please review the draft itinerary below.
+            </p>
+
+            <div id="draftItineraryBox" class="result-box draft-box"></div>
+
+            <div class="approval-controls">
+                <label for="feedbackInput" class="quick-label">Request changes (optional note):</label>
+                <textarea id="feedbackInput" class="feedback-input" placeholder="e.g. Swap the hotel area for something closer to downtown, add a day-trip on day 3..."></textarea>
+
+                <div class="approval-buttons">
+                    <button id="approveBtn" class="approve-btn" onclick="approveItinerary()">✅ Approve &amp; Finalize</button>
+                    <button id="reviseBtn" class="revise-btn" onclick="requestRevision()">✏️ Request Changes</button>
+                </div>
+            </div>
         </section>
 
         <!-- ============ BOARDING PASS RESULT ============ -->
@@ -173,7 +227,7 @@
     </main>
 
     <footer>
-        Voyagent AI · Built with FastAPI · LangGraph · Groq · PostgreSQL · Tavily · AviationStack
+        Voyagent AI · FastAPI · LangGraph Supervisor · Groq · PostgreSQL · MCP (Tavily · AviationStack · Weather) · Human-in-the-Loop
     </footer>
 
     <!-- Markdown Renderer -->

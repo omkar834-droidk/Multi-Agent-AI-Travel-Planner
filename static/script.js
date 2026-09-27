@@ -26,19 +26,46 @@ function setPrompt(text) {
     document.getElementById("userInput").focus();
 }
 
+const PIPELINE_STAGES = [
+    "Supervisor is checking your request…",
+    "Routing to the right specialist agents…",
+    "Checking flights & airports…",
+    "Scouting hotels…",
+    "Reading the weather…",
+    "Crunching the budget…",
+    "Drafting your itinerary…"
+];
+let pipelineInterval = null;
+
 function setLoading(isLoading) {
     const sendBtn = document.getElementById("sendBtn");
     const btnText = document.getElementById("btnText");
     const btnLoader = document.getElementById("btnLoader");
+    const pipelineStatus = document.getElementById("pipelineStatus");
 
     sendBtn.disabled = isLoading;
 
     if (isLoading) {
         btnText.classList.add("hidden");
         btnLoader.classList.remove("hidden");
+
+        let stageIndex = 0;
+        pipelineStatus.textContent = PIPELINE_STAGES[0];
+        pipelineStatus.classList.remove("hidden");
+
+        pipelineInterval = setInterval(() => {
+            stageIndex = (stageIndex + 1) % PIPELINE_STAGES.length;
+            pipelineStatus.textContent = PIPELINE_STAGES[stageIndex];
+        }, 1800);
     } else {
         btnText.classList.remove("hidden");
         btnLoader.classList.add("hidden");
+
+        if (pipelineInterval) {
+            clearInterval(pipelineInterval);
+            pipelineInterval = null;
+        }
+        pipelineStatus.classList.add("hidden");
     }
 }
 
@@ -194,23 +221,197 @@ async function updateRouteMap(info) {
     }
 }
 
-/* ============ RESULT RENDERING ============ */
-function showResult(answer, threadId, tripInfo) {
-    latestAnswerMarkdown = answer;
+/* ============ AGENT TRACE / INTELLIGENCE PANEL ============ */
+const AGENT_META = [
+    { key: "flight_agent", label: "Flights", icon: "✈️" },
+    { key: "hotel_agent", label: "Hotels", icon: "🏨" },
+    { key: "weather_agent", label: "Weather", icon: "🌤️" },
+    { key: "budget_agent", label: "Budget", icon: "💰" },
+    { key: "itinerary_agent", label: "Itinerary", icon: "🗓️" }
+];
+
+function renderAgentChips(selectedAgents) {
+    const container = document.getElementById("agentChips");
+    const selected = new Set(selectedAgents || []);
+
+    container.innerHTML = AGENT_META.map(agent => {
+        const isActive = selected.has(agent.key);
+        const cls = isActive ? "agent-chip active" : "agent-chip";
+        return `<span class="${cls}">${agent.icon} ${agent.label}</span>`;
+    }).join("");
+}
+
+function renderWeatherCard(weatherResults) {
+    const card = document.getElementById("weatherCard");
+    const body = document.getElementById("weatherBody");
+
+    if (!weatherResults || !weatherResults.trim()) {
+        card.classList.add("hidden");
+        return;
+    }
+
+    body.textContent = weatherResults.trim();
+    card.classList.remove("hidden");
+}
+
+function renderBudgetCard(budgetResults) {
+    const card = document.getElementById("budgetCard");
+    const body = document.getElementById("budgetBody");
+
+    if (!budgetResults || !budgetResults.trim()) {
+        card.classList.add("hidden");
+        return;
+    }
+
+    if (typeof marked !== "undefined") {
+        body.innerHTML = marked.parse(budgetResults);
+    } else {
+        body.innerText = budgetResults;
+    }
+
+    card.classList.remove("hidden");
+}
+
+function renderAgentTrace(data) {
+    const traceSection = document.getElementById("agentTraceSection");
+    const reasoningNote = document.getElementById("reasoningNote");
+
+    renderAgentChips(data.selected_agents);
+    renderWeatherCard(data.weather_results);
+    renderBudgetCard(data.budget_results);
+
+    if (data.supervisor_reasoning && data.supervisor_reasoning.trim()) {
+        reasoningNote.textContent = `Why these agents: ${data.supervisor_reasoning.trim()}`;
+        reasoningNote.classList.remove("hidden");
+    } else {
+        reasoningNote.classList.add("hidden");
+    }
+
+    traceSection.classList.remove("hidden");
+}
+
+function hideAgentTrace() {
+    document.getElementById("agentTraceSection").classList.add("hidden");
+}
+
+
+function showResult(data, tripInfo) {
+    latestAnswerMarkdown = data.answer;
+
+    const approvalSection = document.getElementById("approvalSection");
+    if (approvalSection) approvalSection.classList.add("hidden");
 
     const resultSection = document.getElementById("resultSection");
     const resultBox = document.getElementById("resultBox");
 
     if (typeof marked !== "undefined") {
-        resultBox.innerHTML = marked.parse(answer);
+        resultBox.innerHTML = marked.parse(data.answer);
     } else {
-        resultBox.innerText = answer;
+        resultBox.innerText = data.answer;
     }
 
-    updateBoardingPass(tripInfo, threadId);
+    updateBoardingPass(tripInfo, data.thread_id);
+    renderAgentTrace(data);
 
     resultSection.classList.remove("hidden");
     resultSection.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+/* ============ HUMAN-IN-THE-LOOP APPROVAL ============ */
+let pendingTripInfo = { from: null, to: null, days: null, budget: null };
+
+function showApprovalPanel(data, tripInfo) {
+    pendingTripInfo = tripInfo;
+
+    const resultSection = document.getElementById("resultSection");
+    resultSection.classList.add("hidden");
+
+    const approvalSection = document.getElementById("approvalSection");
+    const approvalNote = document.getElementById("approvalNote");
+    const draftBox = document.getElementById("draftItineraryBox");
+    const feedbackInput = document.getElementById("feedbackInput");
+
+    approvalNote.textContent = data.approval_request ||
+        "Please review the draft itinerary below.";
+
+    const draftText = data.itinerary || data.answer || "";
+
+    if (typeof marked !== "undefined") {
+        draftBox.innerHTML = marked.parse(draftText);
+    } else {
+        draftBox.innerText = draftText;
+    }
+
+    feedbackInput.value = "";
+
+    renderAgentTrace(data);
+
+    approvalSection.classList.remove("hidden");
+    approvalSection.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function setApprovalLoading(isLoading) {
+    document.getElementById("approveBtn").disabled = isLoading;
+    document.getElementById("reviseBtn").disabled = isLoading;
+}
+
+async function resumeTravel(approved) {
+    if (!currentThreadId) {
+        showError("No active plan to resume. Please submit a new request.");
+        return;
+    }
+
+    hideError();
+    setApprovalLoading(true);
+
+    const feedback = document.getElementById("feedbackInput").value.trim();
+
+    try {
+        const response = await fetch("/api/travel/resume", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                thread_id: currentThreadId,
+                approved: approved,
+                feedback: feedback
+            })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            throw new Error(data.error || "Something went wrong while resuming the plan.");
+        }
+
+        if (data.requires_approval) {
+            // Revised draft is ready for another round of review.
+            showApprovalPanel(data, pendingTripInfo);
+        } else {
+            showResult(data, pendingTripInfo);
+        }
+
+    } catch (error) {
+        showError(error.message);
+    } finally {
+        setApprovalLoading(false);
+    }
+}
+
+function approveItinerary() {
+    resumeTravel(true);
+}
+
+function requestRevision() {
+    const feedback = document.getElementById("feedbackInput").value.trim();
+
+    if (!feedback) {
+        showError("Please add a note on what to change before requesting a revision.");
+        return;
+    }
+
+    resumeTravel(false);
 }
 
 /* ============ SEND MESSAGE ============ */
@@ -226,6 +427,10 @@ async function sendMessage() {
     }
 
     setLoading(true);
+
+    document.getElementById("approvalSection").classList.add("hidden");
+    document.getElementById("resultSection").classList.add("hidden");
+    hideAgentTrace();
 
     const tripInfo = extractTripInfo(message);
     updateRouteMap(tripInfo);
@@ -251,7 +456,14 @@ async function sendMessage() {
         currentThreadId = data.thread_id;
         localStorage.setItem("voyagent_thread_id", currentThreadId);
 
-        showResult(data.answer, data.thread_id, tripInfo);
+        if (data.guardrail_allowed === false) {
+            hideAgentTrace();
+            showError(data.guardrail_reason || data.answer || "This request is outside travel planning.");
+        } else if (data.requires_approval) {
+            showApprovalPanel(data, tripInfo);
+        } else {
+            showResult(data, tripInfo);
+        }
 
     } catch (error) {
         showError(error.message);
