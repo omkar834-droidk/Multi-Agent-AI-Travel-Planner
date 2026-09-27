@@ -120,6 +120,41 @@ body {
     color: transparent;
 }
 
+.topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.new-plan-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--stroke-strong);
+    padding: 7px 13px;
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-weight: 600;
+    font-size: 0.72rem;
+    letter-spacing: 0.03em;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: 0.2s ease;
+}
+
+.new-plan-btn:hover {
+    background: var(--violet-dim);
+    border-color: rgba(179, 136, 255, 0.45);
+    transform: translateY(-1px);
+}
+
+.new-plan-btn:focus-visible {
+    outline: 3px solid var(--sky);
+    outline-offset: 2px;
+}
+
 .status-pill {
     display: flex;
     align-items: center;

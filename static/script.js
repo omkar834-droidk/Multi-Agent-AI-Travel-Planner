@@ -1,4 +1,4 @@
-let currentThreadId = localStorage.getItem("voyagent_thread_id") || null;
+let currentThreadId = sessionStorage.getItem("voyagent_thread_id") || null;
 let latestAnswerMarkdown = "";
 let routeMap = null;
 const geocodeCache = {};
@@ -24,6 +24,22 @@ const geocodeCache = {};
 function setPrompt(text) {
     document.getElementById("userInput").value = text;
     document.getElementById("userInput").focus();
+}
+
+function resetPlan() {
+    currentThreadId = null;
+    sessionStorage.removeItem("voyagent_thread_id");
+
+    hideError();
+    hideAgentTrace();
+
+    document.getElementById("approvalSection").classList.add("hidden");
+    document.getElementById("resultSection").classList.add("hidden");
+    document.getElementById("mapSection").classList.add("hidden");
+    document.getElementById("userInput").value = "";
+    document.getElementById("userInput").focus();
+
+    window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 const PIPELINE_STAGES = [
@@ -454,7 +470,7 @@ async function sendMessage() {
         }
 
         currentThreadId = data.thread_id;
-        localStorage.setItem("voyagent_thread_id", currentThreadId);
+        sessionStorage.setItem("voyagent_thread_id", currentThreadId);
 
         if (data.guardrail_allowed === false) {
             hideAgentTrace();
